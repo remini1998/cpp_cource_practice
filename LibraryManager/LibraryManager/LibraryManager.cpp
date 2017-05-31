@@ -3,14 +3,20 @@
 
 #include "stdafx.h"
 #include <stdio.h>
+#include <iostream>
 #include <Windows.h>
 #include "book.h"
 #include "user.h"
 #include <stdlib.h>
 #include "LibraryManager.h"
+#include <conio.h>
+
+using namespace std;
 
 int main(void)
 {
+	LOOP:
+
 	int choice;
 
 	ShowWelcomeScreen();
@@ -23,12 +29,12 @@ int main(void)
 		case 1:
 		{
 			Login();
-			break;
+			goto LOOP;
 		}
 		case 2:
 		{
 			Regist(0, 1);
-			break;
+			goto LOOP;
 		}
 		case 3:
 		{
@@ -74,54 +80,25 @@ void ShowStartMenu()
 void Login()
 {
 	USER U;
-	char username[20];
-	char password[20];
+	char username[MAX_USERNAME_LENGTH];
+	char password[MAX_PWD_LENGTH];
 	int t = 1;
 	int a = 0;
+	bool adminAvaliable = true;
 	int choice;
 
 LOOP:
-	if (a != 0)
-	{
-		ShowStartMenu();
-		scanf("%d", &choice);
-		switch (choice)
-		{
-		case 1:
-		{
-			Login();
-			return;
-		}
-		case 2:
-		{
-			Regist(0, 1);
-			break;
-		}
-		case 3:
-		{
-			return;
-		}
-		default:
-			printf("无效选项，请检查您的输入");
-		}
-		system("pause");
-		system("cls");
-	}
 	printf("\t\t  请输入用户名:");
 	scanf("%s", username);
 	printf("\t\t  请输入密码:");
-	scanf("%s", password);
-	if (strcmp(username, "admin") == 0 && strcmp(password, "admin") == 0)
-	{
-		printf("\t\t  登陆成功\n");
-		system("cls");
-		ShowAdminUserMenu();
-	}
-	else
-	{
+	input_pwd(password);
+
 		FILE * fp = fopen(USER_FILE, "a+");
-		if (fscanf(fp, "\t\t  %s\t%s\t%d\t%d\n", U.username, U.password, &U.status, &U.role) != -1)
+		while (fscanf(fp, "\t\t  %s\t%s\t%d\t%d\n", U.username, U.password, &U.status, &U.role) != -1)
 		{
+			//如果存在新注册的管理员，则废弃默认管理员
+			if (adminAvaliable && U.role == 2 && U.status == 1) adminAvaliable = !adminAvaliable;
+
 			if (strcmp(username, U.username) == 0 && strcmp(password, U.password) == 0)
 			{
 				if (U.status == 0)
@@ -151,19 +128,23 @@ LOOP:
 						ShowAdminUserMenu();
 						return;
 					}
+					return;
 				}
 			}
 		}
-		else
+		if (adminAvaliable && strcmp(username, "admin") == 0 && strcmp(password, "admin") == 0)
 		{
-			printf("\t\t  登录失败，密码或用户名错误%d次\n", t++);
-			if (t == 4)
-			{
-				Lock();
-			}
+			printf("\t\t  登陆成功\n");
+			system("cls");
+			ShowAdminUserMenu();
+			return;
+		}
+		printf("\t\t  登录失败，密码或用户名错误%d次\n", t++);
+		if (t == 4)
+		{
+			Lock();
 		}
 		goto LOOP;
-	}
 }
 
 void Lock() {
@@ -176,14 +157,14 @@ void Lock() {
 void Regist(int status, int role)
 {
 	USER u;
-	char repass[20];
+	char repass[MAX_PWD_LENGTH];
 LOOP:
-	printf("\t\t  enter regist user name:");
+	printf("\t\t  输入用户名:");
 	scanf("%s", u.username);
-	printf("\t\t  enter regist password:");
-	scanf("%s", u.password);
-	printf("\t\t  repeat password：");
-	scanf("%s", repass);
+	printf("\t\t  输入密码:");
+	input_pwd(u.password);
+	printf("\t\t  重复密码：");
+	input_pwd(repass);
 	if (strcmp(repass, u.password) == 0)
 	{
 		printf("\t\t  注册成功\n");
@@ -387,20 +368,20 @@ void AcceptUser(void)
 	int a = 0;
 	int num = 0;
 
+	//读取文件并打印
 	FILE * fp = fopen(USER_FILE, "a+");
-	if (fscanf(fp, "\t\t  %s\t%s\t%d\t%d\n", temp[i].username, temp[i].password, &temp[i].status, &temp[i].role) != -1)
+	while (fscanf(fp, "\t\t  %s\t%s\t%d\t%d\n", temp[i].username, temp[i].password, &temp[i].status, &temp[i].role) != -1)
 	{
-		i++;
-		fclose(fp);
-	LOOP:
-		for (; j < i; j++)
+		
+		if (temp[i].status == 0)
 		{
-			if (temp[j].status == 0)
-			{
-				printf("\t\t  %d--%s\t%s\t%d\t%d\n", j + 1, temp[j].username, temp[j].password, temp[j].status, temp[j].role);
-				a++;
-			}
+			printf("\t\t  %d--%s\t%s\t%d\t%d\n", i + 1, temp[i].username, temp[i].password, temp[i].status, temp[i].role);
+			a++;
 		}
+		i++;
+	}
+	fclose(fp);
+	LOOP:
 		if (a != 0)
 		{
 			puts("\t\t  请输入需要审核的用户前面的序号：");
@@ -421,9 +402,6 @@ void AcceptUser(void)
 		else
 			printf("当前没有任何待审核的注册用户\n");
 		fclose(fp);
-	}
-	else
-		printf("当前没有任何待审核的注册用户\n");
 	system("pause");
 	system("cls");
 }
@@ -431,7 +409,7 @@ void AcceptUser(void)
 void BorrowBook()
 {
 	BOOK *temp = new BOOK[CountLineInFile(BOOK_FILE) + 1];
-	int i, j = 0;
+	int i=0, j = 0;
 	FILE * fp = fopen(BOOK_FILE, "a+");
 	while (fscanf(fp, "\t\t  %s\t%s\t%s\t%lf\t%d/%d/%d\t%d\n", temp[i].bookName, temp[i].bookNum, temp[i].publish, &temp[i].price, &temp[i].publishTime.year, &temp[i].publishTime.month, &temp[i].publishTime.day, &temp[i].status) != -1)
 		i++;
@@ -466,7 +444,7 @@ LOOP:
 void ReturnBook(void)
 {
 	BOOK *temp = new BOOK[CountLineInFile(BOOK_FILE) + 1];
-	int i, j = 0;
+	int i = 0, j = 0;
 
 	FILE * fp = fopen(BOOK_FILE, "a+");
 	while (fscanf(fp, "\t\t  %s\t%s\t%s\t%lf\t%d/%d/%d\t%d\n", temp[i].bookName, temp[i].bookNum, temp[i].publish, &temp[i].price, &temp[i].publishTime.year, &temp[i].publishTime.month, &temp[i].publishTime.day, &temp[i].status) != -1)
@@ -495,4 +473,18 @@ LOOP:
 	fclose(fp);
 	puts("\t\t  还书成功");
 	return;
+}
+
+void input_pwd(char* output) {
+	int n = 0;
+	while (1) {
+		output[n] = (char)getch();
+		if (output[n] == '\r' || output[n] == '\n') {
+			output[n] = '\0';
+			printf("\n");
+			break;//遇到回车则退出输入
+		}
+		n++;
+		printf("*");
+	}
 }

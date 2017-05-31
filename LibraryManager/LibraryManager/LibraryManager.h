@@ -8,7 +8,8 @@
 
 #define USER_FILE "user_data.ini"
 #define BOOK_FILE "book_data.ini"
-
+#define MAX_USERNAME_LENGTH 20
+#define MAX_PWD_LENGTH 20
 
 void ShowWelcomeScreen();
 void ShowStartMenu();
@@ -25,3 +26,4 @@ int CountLineInFile(char filename[]);
 void AcceptUser();
 void BorrowBook();
 void ReturnBook();
+void input_pwd(char* output);
