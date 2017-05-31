@@ -319,7 +319,7 @@ int CountLineInFile(char filename[]) {
 
 void UpdateBookData(void) {
 	BOOK *temp = new BOOK[CountLineInFile(BOOK_FILE) + 1];
-	int i, j = 0;
+	int i = 0, j = 0;
 	FILE * fp = fopen(BOOK_FILE, "a+");
 	while (fscanf(fp, "\t\t  %s\t%s\t%s\t%lf\t%d/%d/%d\t%d\n", temp[i].bookName, temp[i].bookNum, temp[i].publish, &temp[i].price,
 		&temp[i].publishTime.year, &temp[i].publishTime.month, &temp[i].publishTime.day, &temp[i].status) != -1)
