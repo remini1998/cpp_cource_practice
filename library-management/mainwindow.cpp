@@ -12,3 +12,13 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::on_btn_login_clicked()
+{
+
+}
+
+void MainWindow::on_actionexit_triggered()
+{
+    QCoreApplication::quit();
+}
